@@ -1,30 +1,30 @@
 import os
+import json
+import time
+import asyncio
 from flask import Flask
 from threading import Thread
+from telethon import TelegramClient, events, Button
+from telethon.errors.rpcerrorlist import FloodWaitError, UserIsBlockedError, PeerFloodError
 
-# --- INICIO DEL TRUCO PARA RENDER ---
+# --- 1. CAMBIO PARA RENDER: SERVIDOR WEB ---
 app = Flask('')
 
 @app.route('/')
 def home():
-    return "¡Bot de Telegram en línea!"
+    return "¡Bot de Telegram en línea! By Mateoz"
 
-def run():
-    # Render nos asigna un puerto automáticamente
+def run_flask():
+    # Render asigna un puerto automáticamente
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
 
 def keep_alive():
-    t = Thread(target=run)
+    t = Thread(target=run_flask)
+    t.daemon = True # Esto asegura que el hilo web no bloquee el cierre del bot
     t.start()
-import os
-import json
-import time
-import asyncio
-from telethon import TelegramClient, events, Button
-from telethon.errors.rpcerrorlist import FloodWaitError, UserIsBlockedError, PeerFloodError
 
-# --- CONFIGURACIÓN ---
+# --- CONFIGURACIÓN ORIGINAL ---
 API_ID = 39968832
 API_HASH = "4e34b241319e3def1dcb7dfc13803371"
 BOT_TOKEN ="8616101954:AAG8sLd-wAmP_mXLejLqDUTMHvoJF1qooDY"
@@ -323,7 +323,6 @@ async def show_blacklist_page(event, uid, page=0):
             await event.edit("ℹ️ No estás en ningún grupo o canal.")
             return
         
-        # Dividir en páginas de 8 grupos cada una
         groups_per_page = 8
         total_pages = (len(all_groups) + groups_per_page - 1) // groups_per_page
         page = max(0, min(page, total_pages - 1))
@@ -336,16 +335,14 @@ async def show_blacklist_page(event, uid, page=0):
             is_blacklisted = group_id in blacklist
             emoji = "✅" if not is_blacklisted else "❌"
             
-            # Limitar longitud del nombre para el botón
             display_name = (group_name[:15] + '...') if len(group_name) > 15 else group_name
             buttons.append([
                 Button.inline(
                     f"{emoji} {display_name}", 
-                    data=f"toggle_{group_id}_{page}"  # Incluir página actual en el callback
+                    data=f"toggle_{group_id}_{page}" 
                 )
             ])
         
-        # Botones de navegación
         nav_buttons = []
         if page > 0:
             nav_buttons.append(Button.inline("⬅️ Anterior", data=f"bl_page_{page-1}"))
@@ -393,7 +390,6 @@ async def toggle_blacklist(event):
     
     save_blacklist(blacklist)
     
-    # Notificación rápida
     try:
         user_client = user_sessions.get(uid)
         group = await user_client.get_entity(group_id)
@@ -402,7 +398,6 @@ async def toggle_blacklist(event):
     except:
         await event.answer(f"Grupo ID {group_id} {action} la blacklist")
     
-    # Refrescar la página actual
     await show_blacklist_page(event, uid, page)
 
 @bot.on(events.CallbackQuery(pattern=b'back_to_menu'))
@@ -543,8 +538,13 @@ async def main():
     print("\n✅ Bot iniciado y escuchando eventos.")
     await bot.run_until_disconnected()
 
+# --- 2. CAMBIO FINAL PARA RENDER: EJECUCIÓN CORRECTA ---
 if __name__ == "__main__":
+    # Primero lanzamos el servidor web en un hilo aparte
+    keep_alive()
+    
+    # Luego arrancamos el bot de forma asíncrona
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("\n🛑 Bot detenido.") # Bot By Mateoz
+        print("\n🛑 Bot detenido.")
