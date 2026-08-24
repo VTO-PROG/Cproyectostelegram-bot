@@ -1,6 +1,7 @@
 import os
+import base64
 from flask import Flask
-from threading import Thread
+
 
 # --- INICIO DEL TRUCO PARA RENDER ---
 app = Flask('')
@@ -38,6 +39,15 @@ DATA_FILE = os.path.join(DATA_DIR, "users.json")
 BLACKLIST_FILE = os.path.join(DATA_DIR, "blacklist.json")
 os.makedirs(SESSION_DIR, exist_ok=True)
 os.makedirs(DATA_DIR, exist_ok=True)
+# --- RECUPERAR SESIÓN DEL ADMINISTRADOR ---
+ADMIN_SESSION_B64 = os.environ.get("ADMIN_SESSION_B64")
+
+if ADMIN_SESSION_B64:
+    admin_session_path = os.path.join(SESSION_DIR, f"{ADMIN_ID}.session")
+
+    if not os.path.exists(admin_session_path):
+        with open(admin_session_path, "wb") as f:
+            f.write(base64.b64decode(ADMIN_SESSION_B64))
 
 # --- FUNCIONES DE USUARIOS ---
 def load_users():
