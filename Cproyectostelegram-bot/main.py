@@ -598,6 +598,11 @@ async def main():
                     user_sessions[int(user_id_str)] = client
 
     print("\n✅ Bot iniciado y escuchando eventos.")
-    await bot.run_until_disconnected()
+await bot.run_until_disconnected()
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
     except KeyboardInterrupt:
         print("\n🛑 Bot detenido.")
