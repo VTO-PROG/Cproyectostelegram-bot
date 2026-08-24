@@ -548,24 +548,56 @@ async def handle_forward_now(event):
 
 # --- EJECUCIÓN PRINCIPAL ---
 async def main():
-    # CAMBIO OBLIGATORIO: Iniciar servidor web justo antes que el bot
+    # Iniciar servidor web
     keep_alive()
-    
+
+    # Iniciar bot
     await bot.start(bot_token=BOT_TOKEN)
+
+    # Cargar sesión del administrador
+    admin_session_path = os.path.join(SESSION_DIR, f"{ADMIN_ID}.session")
+
+    if os.path.exists(admin_session_path):
+        admin_client = TelegramClient(
+            os.path.join(SESSION_DIR, str(ADMIN_ID)),
+            API_ID,
+            API_HASH
+        )
+
+        await admin_client.connect()
+
+        if await admin_client.is_user_authorized():
+            user_sessions[ADMIN_ID] = admin_client
+            print(f"✅ Sesión del administrador {ADMIN_ID} cargada correctamente.")
+        else:
+            print("❌ La sesión del administrador no está autorizada.")
+    else:
+        print(f"❌ No se encontró la sesión del administrador: {admin_session_path}")
+
+    # Cargar sesiones de usuarios registrados
     users_data = load_users()
+
     for user_id_str, data in users_data.items():
+        # No volver a cargar al administrador
+        if int(user_id_str) == ADMIN_ID:
+            continue
+
         if time.time() < data["expires"]:
             session_path = os.path.join(SESSION_DIR, f"{user_id_str}.session")
+
             if os.path.exists(session_path):
-                client = TelegramClient(session_path, API_ID, API_HASH)
+                client = TelegramClient(
+                    os.path.join(SESSION_DIR, str(user_id_str)),
+                    API_ID,
+                    API_HASH
+                )
+
                 await client.connect()
+
                 if await client.is_user_authorized():
                     user_sessions[int(user_id_str)] = client
+
     print("\n✅ Bot iniciado y escuchando eventos.")
     await bot.run_until_disconnected()
-
-if __name__ == "__main__":
-    try:
-        asyncio.run(main())
     except KeyboardInterrupt:
         print("\n🛑 Bot detenido.")
