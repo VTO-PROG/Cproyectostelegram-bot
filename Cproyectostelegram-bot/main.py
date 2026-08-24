@@ -29,7 +29,7 @@ from telethon.errors.rpcerrorlist import FloodWaitError, UserIsBlockedError, Pee
 API_ID = 39968832
 API_HASH = "4e34b241319e3def1dcb7dfc13803371"
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
-ADMIN_ID = 7951708357
+ADMIN_ID = 8556156676
 
 # --- RUTAS Y CARPETAS ---
 SESSION_DIR = "sessions"
